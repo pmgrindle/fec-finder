@@ -14,6 +14,9 @@ def writeFECData(candID, office):
     params = {'api_key': apiKey.fecApiKey, 'committee_type': office, 'designation': 'P'}
     candComms = requests.get("https://api.open.fec.gov/v1/candidate/" + candID + "/committees/", params = params) 
     commArr = candComms.json()['results']
+    if len(commArr) == 0:
+        print("No principal committee found")
+        return
     email, phone, website, extraEmails, extraPhones, extraWebsites = "", "", "", "", "", ""
     numPrincipal = 1
     for comm in commArr:
@@ -35,7 +38,6 @@ def writeFECData(candID, office):
         else:
             if comm['email']:
                 email = comm['email'].lower()
-            email = comm['email'].lower()
             if comm['custodian_phone']:
                 phone = comm['custodian_phone']
             if comm['website']:
@@ -61,9 +63,8 @@ scaleGroup = parser.add_mutually_exclusive_group(required=True)
 scaleGroup.add_argument('-requestLimit', type=int)
 scaleGroup.add_argument('-full', action='store_true')
 parser.add_argument('-local', action='store_true')
-lowTierGroup = parser.add_mutually_exclusive_group()
-lowTierGroup.add_argument('-offset', type=int, default=0)
-lowTierGroup.add_argument('-numRuns', type=int, default=0)
+parser.add_argument('-offset', type=int, default=0)
+parser.add_argument('-numRuns', type=int, default=0)
 #group = parser.add_mutually_exclusive_group(required=True)
 # Add arguments for which states to scrape, or all states, and whether abbreviated
 # Use of mutual exclusive group ensures only one of these arguments is used
@@ -125,7 +126,7 @@ requestNum = 0
 
 if not args.full and args.offset:
     print('1')
-    for i in range(args.offset+1, args.requestLimit + args.offset):
+    for i in range(args.offset+1, args.requestLimit + args.offset+1):
         if requestNum == args.requestLimit:
             print("Request limit reached. Exiting")
             sys.exit()
@@ -146,17 +147,17 @@ if not args.full and args.offset:
         extraNames = fullName.split(',')[1].split(' ')
         firstName = extraNames[1][0] + extraNames[1][1:].lower()
         middlePrefixSuffix = ""
-        print(lastName + ", " + firstName + " -- " + middlePrefixSuffix + ", " + party)
         if len(extraNames) > 2:
             for i in range(2, len(extraNames)):
                 middlePrefixSuffix += extraNames[i] + " "
+        print(lastName + ", " + firstName + " -- " + middlePrefixSuffix + ", " + party)
         writeFECData(candID, office)
         requestNum += 1
 
 elif not args.full and args.numRuns:
     print('2')
-    for i in range((args.numRun-1)*500+1, 500*args.numRuns):
-        if requestNum == 500:
+    for i in range((args.numRuns-1)*10+1, 10*args.numRuns+1):
+        if requestNum == 10:
             print("Request limit reached. Exiting")
             sys.exit()
         with zipfile.ZipFile(filename, 'r') as archive:
@@ -177,19 +178,23 @@ elif not args.full and args.numRuns:
         extraNames = fullName.split(',')[1].split(' ')
         firstName = extraNames[1][0] + extraNames[1][1:].lower()
         middlePrefixSuffix = ""
-        print(lastName + ", " + firstName + " -- " + middlePrefixSuffix + ", " + party)
         if len(extraNames) > 2:
             for i in range(2, len(extraNames)):
                 middlePrefixSuffix += extraNames[i] + " "
+        print(lastName + ", " + firstName + " -- " + middlePrefixSuffix + ", " + party)
         writeFECData(candID, office)
         requestNum += 1
 
 else:  
-    print('3')  
+    print('3') 
+    linecount = 1 
     archive = zipfile.ZipFile(filename, 'r')
     candTextName = "webl"+year[2:]+".txt"
     candText = archive.open(candTextName)
     for line in candText:
+        if linecount < args.offset:
+            linecount += 1
+            continue
         if requestNum == args.requestLimit:
             print("Request limit reached. Exiting")
             sys.exit()
@@ -209,14 +214,9 @@ else:
         extraNames = fullName.split(',')[1].split(' ')
         firstName = extraNames[1][0] + extraNames[1][1:].lower()
         middlePrefixSuffix = ""
-        print(lastName + ", " + firstName + " -- " + middlePrefixSuffix + ", " + party)
         if len(extraNames) > 2:
             for i in range(2, len(extraNames)):
                 middlePrefixSuffix += extraNames[i] + " "
+        print(lastName + ", " + firstName + " -- " + middlePrefixSuffix + ", " + party)
         writeFECData(candID, office)
         requestNum += 1
-
-    
-
-
-
