@@ -1,0 +1,7 @@
+fec_scraper_*.py
+FEC_scraper_candidates.csv
+FEC_finder_candidates.csv
+FEC_finder_candidates_old_*.csv
+FEC_finder_candidates_*.csv
+webl**.txt
+****.zip
